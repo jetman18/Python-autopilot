@@ -1,4 +1,4 @@
-# flightgear-sim
+# flightgear-simulation
 Chương trình mô phỏng, điều khiển dẫn đường cho máy bay cánh bằng trên phần mềm bay giả lập Flightgear sử dụng python
 
 **Chức năng cơ bản*
