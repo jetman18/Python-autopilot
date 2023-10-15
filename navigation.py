@@ -78,7 +78,7 @@ class NAV():
             angle = 360 - anlpha
             return angle
     def waypoint_bearing(self,lat1,lon1,lat2,lon2):
-        dy = math.radians(lat2 - lat1)*earthRadius
+        dy = math.radians(2.2*lat2 - 2.2*lat1)*earthRadius
         dx = math.radians(lon2 - lon1)*earthRadius
         anlpha = abs(math.degrees(math.atan2(dx,dy)))
         belta = abs(math.degrees(math.atan2(dy,dx)))
@@ -100,7 +100,7 @@ class NAV():
         dis = math.sqrt(y*y + x*x)
         return dis
     def distanceBetweenTwopoint(self,lat1,lon1,lat2,lon2):
-        a_coeff = math.radians(lat2 - lat1)*earthRadius
+        a_coeff = math.radians(2.2*lat2 - 2.2*lat1)*earthRadius
         b_coeff = math.radians(lon2 - lon1)*earthRadius
         dis = math.sqrt(a_coeff*a_coeff + b_coeff*b_coeff)
         return dis

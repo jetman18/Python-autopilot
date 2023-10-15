@@ -1,6 +1,6 @@
 import time
 class PID:
-    max_I = 0.3
+    max_I = 0.7
     def __init__(self,kp,ki,kd) -> None:
         self.init = False
         self.lastValue = 0

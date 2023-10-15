@@ -45,7 +45,7 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     fdm_conn.start()  # Start the FDM RX loop0
     ##### END INIT #######################
     # roll kd= 0.01 
-    roll = pidcontroller.PID(0.1,0.01,0.001) # 0,02  0.002
+    roll = pidcontroller.PID(0.1,0.1,0.001) # 0,02  0.002
     pitch = pidcontroller.PID(0.02,0,0)
     yaw = pidcontroller.PID(0.5,0,0)
 
@@ -63,6 +63,7 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     timer = time.time()
     loiter_st = 0
     rudder = 0
+    tt=0
     while wd.isRun():
         recvAtitude = fdm_event_pipe.parent_recv() 
         if  time.time() - timer > 0.1:  # 10hz command send
@@ -73,7 +74,7 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             yaw_cd,dis = navigator.loiter(recvAtitude[3],recvAtitude[4],
                                       63.94846441361346,
                                       -22.605470890274642,
-                                      3000,0.7)
+                                      1000,0.7)
             yaw_command = yaw_aircraft.fixRange(yaw_cd)
             if ppp.poll():
                 data = ppp.recv()
@@ -97,8 +98,10 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
                     rudder = 70
                 elif rudder <-70:
                     rudder = -70
-            
-            print(yaw_deg,'  ',yaw_command,'  ',dis)
+            if time.time() -  tt > 1:
+                #print(recvAtitude[3],' ',recvAtitude[4])
+                tt = time.time()
+            print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
             aileron = roll.pidCalculate(recvAtitude[0],-rudder)
             elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
             #rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
