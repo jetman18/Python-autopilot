@@ -1,19 +1,20 @@
 
 default_altitude = 400 #m
 class wp():
-    def __init__(self,name,altitude,latitude,longitude) -> None:
+    def __init__(self,name,latitude,longitude,altitude) -> None:
         self.name = name
-        self.altitude = 0
+        self.altitude = altitude
         self.velocity = 0
-        self.latitude = 0
-        self.longitude = 0
+        self.latitude = latitude
+        self.longitude = longitude
 class wayPoint():
     def __init__(self) -> None:
         self.wP=[]
         self.wp_count = 0
-    def addWaypoint(self,name,altitude,latitude,longitude):
+    def addWaypoint(self,name,latitude,longitude,altitude):
         self.wp_count +=1
-        self.wP.append(wp(name,altitude,latitude,longitude))
+        self.wP.append(wp(name,latitude,longitude,altitude))
+
     def deleteWaypoint(self,index):
         self.wp_count -=1
         self.wP.pop(index)

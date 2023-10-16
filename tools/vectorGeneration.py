@@ -5,7 +5,7 @@ import math
 win=Tk()
 
 # Set the size of the tkinter window
-win.geometry("1200x1200")
+win.geometry("1000x600")
 
 
 def sign(x):
@@ -32,7 +32,7 @@ def vect(x,y,angle,color):
     canvas.create_line(center_x,center_y,end_x,end_y, fill=color, width=2)
 
 def test_case1():
-    Kd = 0.5
+    Kd = 1
     Kc =1
     pi2 = 90
     step = 20
@@ -49,8 +49,8 @@ def test_case1():
             pi1 = math.degrees(pi1) + 90
             Dct = j - line_p2[1]
             sigDct = sign(Dct)
-            s = math.pow(abs(Dct*Kc*(pi1 - pi2)),Kd)*sigDct
-            phi = 90 - s
+            s = math.pow(abs(Dct*Kc),Kd)
+            phi = 90 - min(s,90)*sigDct
             vect(i,j,phi,'blue')
     canvas.create_text(35,20, text='Kd: '+str(Kd), fill="black", font=('8'))
     canvas.create_text(35,45, text='Kc: '+str(Kc), fill="black", font=('8'))
@@ -59,7 +59,7 @@ def test_case2_loiter(radius):
     step = 20
     canvas.create_oval(500,300,502,302,outline = "black",fill = "white",width = 5)
     canvas.create_oval(500 - radius,300 - radius,500 + radius + 2,300 +radius + 2,outline = "black",width = 2)
-    Kc =1
+    Kc = 500/radius
     for i in range(100,1000,step):
         for j in range(0,600,step-5):
             x = 501 - i
@@ -114,8 +114,8 @@ def test_folow_waypoint(radius):
 
 
            
-#test_case1()
+test_case1()
 #test_folow_waypoint(100)
-test_case2_loiter(400)
+#test_case2_loiter(100)
 canvas.pack()
 win.mainloop()

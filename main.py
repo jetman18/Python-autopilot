@@ -2,6 +2,7 @@
 Start FlightGear with:
 `fgfs --native-fdm=socket,out,30,localhost,5501,udp --native-ctrls=socket,out,30,localhost,5503,udp --native-ctrls=socket,in,30,localhost,5504,udp --aircraft=sf260`
 """
+
 import navigation
 import time
 import math
@@ -56,8 +57,8 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
 
     recvAtitude=[]
     navigator = navigation.NAV()
-    yaw_loiter = navigation.yawExtrame()
-    yaw_aircraft = navigation.yawExtrame()
+    yaw_loiter = navigation.anglextrame()
+    yaw_aircraft = navigation.anglextrame()
     pp,ppp = mp.Pipe()
     wd = window(pp)
     timer = time.time()
@@ -70,12 +71,11 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             timer = time.time()
             
             #############################################
-            yaw_deg = yaw_loiter.fixRange(recvAtitude[2])
-            yaw_cd,dis = navigator.loiter(recvAtitude[3],recvAtitude[4],
-                                      63.94846441361346,
-                                      -22.605470890274642,
-                                      1000,0.7)
-            yaw_command = yaw_aircraft.fixRange(yaw_cd)
+            yaw_deg = recvAtitude[2]
+            yaw_command,dis = navigator.cricleFly(recvAtitude[3],recvAtitude[4],
+                                    63.94846441361346,
+                                    -22.605470890274642,
+                                    1000)
             if ppp.poll():
                 data = ppp.recv()
                 data = struct.unpack('ddd',data)
@@ -101,7 +101,7 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             if time.time() -  tt > 1:
                 #print(recvAtitude[3],' ',recvAtitude[4])
                 tt = time.time()
-            print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
+            #print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
             aileron = roll.pidCalculate(recvAtitude[0],-rudder)
             elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
             #rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
