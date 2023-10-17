@@ -1,4 +1,4 @@
-# flightgear-simulation
+# Flightgear-simulation
 Chương trình mô phỏng, điều khiển dẫn đường cho máy bay cánh bằng trên phần mềm bay giả lập Flightgear sử dụng python
 
 **Chức năng cơ bản*
@@ -6,7 +6,7 @@ Chương trình mô phỏng, điều khiển dẫn đường cho máy bay cánh 
 - Bay vòng tròn Loiter
 - ...
 
-![exampl](./resource/image1.png)
+![exampl](./resource/image3.png)
 # Thuật toán dẫn đường
 + Phương pháp vector tọa độ "Vector Field Guidance"
 + Tham khảo bài báo "Autonomous Waypoint-based Guidance

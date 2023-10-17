@@ -1,4 +1,4 @@
-
+'''
 from waypoint import wayPoint
 from navigation import NAV
 import time
@@ -13,6 +13,12 @@ wp.addWaypoint('wp',0.003,-0.003,0)
 k.navigationStart(0.0,0.001,wp)
 time.sleep(0.6)
 k.navigationStart(0.0,0.001,wp)
-
+'''
+error = 350 - 90
+if error > 180:
+    error = error - 360
+elif error < -180:
+    error = error + 360
+print(error)
 
 

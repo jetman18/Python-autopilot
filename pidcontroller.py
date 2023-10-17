@@ -25,6 +25,25 @@ class PID:
         D = (value - self.lastValue)*self.kd/self.Dt
         self.lastValue = value
         return (P + self.I + D)
+    def yawPid(self,value,setpoint):
+        self.Dt = time.time() - self.lastExcTime
+        self.lastExcTime = time.time()
+        if self.Dt == 0:
+            return 0
+        eror = value - setpoint
+        if eror > 180:
+            eror = eror - 360
+        elif eror < -180:
+            eror = eror + 360
+        P = eror*self.kp
+        self.I += eror*self.Dt*self.ki
+        if self.I > PID.max_I:
+            self.I = PID.max_I
+        if self.I < -PID.max_I:
+            self.I = -PID.max_I
+        D = (value - self.lastValue)*self.kd/self.Dt
+        self.lastValue = value
+        return (P + self.I + D)
     
     def pidReset(self):
         self.lastValue = 0

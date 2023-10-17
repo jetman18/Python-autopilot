@@ -16,7 +16,7 @@ def ctrls_callback(ctrls_data, event_pipe):
     ail_ctrl,ele_ctrl,rud_ctrl,thro_ctrl,flap_ctrl = event_pipe.child_recv()  
     ctrls_data.elevator = ele_ctrl
     ctrls_data.aileron  = -ail_ctrl
-    ctrls_data.rudder =   rud_ctrl
+    ctrls_data.rudder =   0
     ctrls_data.throttle[0] = 1#thro_ctrl
     #ctrls_data.flaps = flap_ctrl
     return ctrls_data
@@ -48,28 +48,27 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     # roll kd= 0.01 
     roll = pidcontroller.PID(0.1,0.1,0.001) # 0,02  0.002
     pitch = pidcontroller.PID(0.02,0,0)
-    yaw = pidcontroller.PID(0.5,0,0)
+    yaw = pidcontroller.PID(0.3,0,0)
 
 
     roll_deg_set = 0
-    pitch_deg_set = 23
-    yaw_deg_set = 250
+    pitch_deg_set = 20
+    yaw_deg_set = 0
 
     recvAtitude=[]
     navigator = navigation.NAV()
     yaw_loiter = navigation.anglextrame()
     yaw_aircraft = navigation.anglextrame()
     pp,ppp = mp.Pipe()
-    wd = window(pp)
+    #wd = window(pp)
     timer = time.time()
     loiter_st = 0
     rudder = 0
     tt=0
-    while wd.isRun():
+    while 1:#wd.isRun():
         recvAtitude = fdm_event_pipe.parent_recv() 
         if  time.time() - timer > 0.1:  # 10hz command send
             timer = time.time()
-            
             #############################################
             yaw_deg = recvAtitude[2]
             yaw_command,dis = navigator.cricleFly(recvAtitude[3],recvAtitude[4],
@@ -88,7 +87,7 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             if recvAtitude[5]>100:
                 loiter_st = 1
             if loiter_st == 1:
-                rudder = yaw.pidCalculate(yaw_deg,yaw_command)
+                rudder = yaw.yawPid(yaw_deg,yaw_command)
                 if rudder > 50:
                     rudder = 50
                 elif rudder <-50:
@@ -101,14 +100,14 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             if time.time() -  tt > 1:
                 #print(recvAtitude[3],' ',recvAtitude[4])
                 tt = time.time()
-            #print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
+            print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
             aileron = roll.pidCalculate(recvAtitude[0],-rudder)
             elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
             #rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
-            wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),
-                           int(recvAtitude[2]),int(recvAtitude[5]),
-                           recvAtitude[3],recvAtitude[4],
-                           recvAtitude[7])
+            #wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),
+            #               int(recvAtitude[2]),int(recvAtitude[5]),
+            #               recvAtitude[3],recvAtitude[4],
+            #               recvAtitude[7])
             ctrls_event_pipe.parent_send((aileron,elevator,0,0,0)) 
     ctrls_conn.stop()
     fdm_conn.stop()
