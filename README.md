@@ -6,6 +6,8 @@ Chương trình mô phỏng, điều khiển dẫn đường cho máy bay cánh 
 - Bay vòng tròn Loiter
 - ...
 
+![exampl](./resource/hmm.png)
+
 ![exampl](./resource/image3.png)
 # Thuật toán dẫn đường
 + Phương pháp vector tọa độ "Vector Field Guidance"
