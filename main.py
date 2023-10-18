@@ -2,6 +2,7 @@
 Start FlightGear with:
 `fgfs --native-fdm=socket,out,30,localhost,5501,udp --native-ctrls=socket,out,30,localhost,5503,udp --native-ctrls=socket,in,30,localhost,5504,udp --aircraft=sf260`
 """
+from utils import *
 import waypoint
 import navigation
 import time
@@ -59,8 +60,8 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     nav = navigation.NAV()
     yaw_loiter = navigation.anglextrame()
     yaw_aircraft = navigation.anglextrame()
-    pp,ppp = mp.Pipe()
-    wd = window(pp)
+    p1,p2 = mp.Pipe()
+    wd = window(p1)
     timer = time.time()
     loiter_st = 0
     aile = 0
@@ -71,26 +72,27 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     
     end_runway_lat =  37.6254018
     end_runway_lon =  -122.385271
-    home_lat = 37.628715674334124
-    home_lon =-122.39334575867426
+    head_runway_lat = 37.628715674334124
+    head_runway_lon =-122.39334575867426
     yaw_deg_set = 117
+
     wp = waypoint.wayPoint()
-    wp.addWaypoint('to',home_lat,home_lon,0)
-    wp.addWaypoint('wp',home_lat,home_lon + 0.04,0)
-    wp.addWaypoint('wp',home_lat + 0.04,home_lon + 0.04,0)
-    wp.addWaypoint('wp',home_lat + 0.04,home_lon,0)
+    wp.addWaypoint('to',head_runway_lat,head_runway_lon,0)
+    wp.addWaypoint('wp',head_runway_lat,head_runway_lon + 0.04,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.04,head_runway_lon + 0.04,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.04,head_runway_lon,0)
 
     ttt = time.time()
     while wd.isRun():
         recvAtitude = fdm_event_pipe.parent_recv() 
-        if  time.time() - timer > 0.1:  # 10hz command send
+        if  time.time() - timer > 0.1:  # 10hz control
             timer = time.time()
             #############################################
             yaw_deg   = recvAtitude[2]
             latitude  = recvAtitude[3]
             longitude = recvAtitude[4]
             altitude  = recvAtitude[5]
-            #yaw_command,dis = nav.cricleFlyMode1(recvAtitude[3],recvAtitude[4],home_lat,home_lon,1000)
+            #yaw_command,dis = nav.cricleFlyMode1(recvAtitude[3],recvAtitude[4],head_runway_lat,head_runway_lon,1000)
             command = nav.navigationStart(latitude,longitude,wp)
             try:
                 rud = command[0]
@@ -100,44 +102,36 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             except:
                 pass
             
-            #print(command[0],'  ',int(command[1]),'',command[2])
-            if ppp.poll():
-                data = ppp.recv()
+            if p2.poll():
+                data = p2.recv()
                 data = struct.unpack('ddd',data)
                 roll_deg_set = data[0]
                 pitch_deg_set = data[1]
                 yaw_deg_set = data[2]
-                print(roll_deg_set,' ',pitch_deg_set,' ',yaw_deg_set)
-            ################PID##############################
+                #print(roll_deg_set,' ',pitch_deg_set,' ',yaw_deg_set)
             
-            if altitude > 50:
+            if altitude > 50: # 50 m
                 loiter_st = 1
             else:
                 rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
             if loiter_st == 1:
+                aile = yaw.yawPid(yaw_deg,rud)
+                aile = constranin(aile,-40,40)
                 rude = 0
-                aile = yaw.yawPid(yaw_deg,rud )
-                if aile > 50:
-                    aile = 50
-                elif aile <-50:
-                    aile = -50
-
-            #ctrls_event_pipe.set()
             #print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
             if time.time() - ttt > 1:
                 ttt = time.time()
-                print(int(yaw_deg),'  ',int(rud),'  ',int(dis),'   ',int(cross_track),'  ',int(wpindex))
-
-            #print(ctrls_event_pipe.is_set())
-            aileron = roll.pidCalculate(recvAtitude[0],-aile)
-            elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
-
+                print(int(yaw_deg),'  ',int(rud),'  ',int(dis),
+                      '   ',int(cross_track),'  ',int(wpindex))
+            
             wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),
                            int(recvAtitude[2]),int(recvAtitude[5]),
-                           recvAtitude[3],recvAtitude[4],
-                           recvAtitude[7])
+                                     recvAtitude[3],recvAtitude[4],
+                                                   recvAtitude[7])
+            aileron = roll.pidCalculate(recvAtitude[0],-aile)
+            elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
             ctrls_event_pipe.parent_send((aileron,elevator,rude,0,0)) 
-            ctrls_event_pipe.clear()
+            ctrls_event_pipe.clear() #important
     # stop all child process
     ctrls_conn.stop()
     fdm_conn.stop()

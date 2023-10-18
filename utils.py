@@ -5,6 +5,7 @@ def swapAngle(deg,swA):
         return deg - 359
     else:
         return deg
+    
 def sign(x):
     temporary=1
     try:
@@ -12,6 +13,7 @@ def sign(x):
     except:
         pass
     return temporary
+
 def range360(value):
     if  value < 0:
         value = 360 + value
@@ -25,13 +27,15 @@ def range180(value):
     elif value < -180:
         value = value + 360
     return value
+
 def range90(value):
     if  value > 90:
         value = 180 - value
     elif value < -90:
         value = (value + 180)*sign(value)
     return value
-def constran(value,min,max):
+
+def constranin(value,min,max):
     if value > max:
         value = max
     elif value < min:
