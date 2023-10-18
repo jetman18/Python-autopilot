@@ -7,8 +7,10 @@ import struct
 class window():
     root = Tk()
     root.title('view')
-    root.geometry("400x300")
-    
+    root.geometry("600x400")
+    canva = Canvas(root,width=200,height=200,bg='black')
+    canva.place(x=0,y=200)
+
     #roll
     label1=Label(root, text='Roll:', font=('Helvetica 10'))
     label1.place(x=10,y=10)
@@ -25,30 +27,40 @@ class window():
     label33=Label(root, text='0', font=('Helvetica 10'))
     label33.place(x=50,y=50)
     #altitude
-    label4=Label(root, text='alt:', font=('Helvetica 10'))
+    label4=Label(root, text='Alt:', font=('Helvetica 10'))
     label4.place(x=10,y=75)
     label44=Label(root, text='0', font=('Helvetica 10'))
     label44.place(x=50,y=75)
     #lat
-    label5=Label(root, text='lat:', font=('Helvetica 10'))
+    label5=Label(root, text='Lat:', font=('Helvetica 10'))
     label5.place(x=10,y=95)
     label55=Label(root, text='0', font=('Helvetica 10'))
     label55.place(x=50,y=95)
     #lon
-    label6=Label(root, text='lon:', font=('Helvetica 10'))
+    label6=Label(root, text='Lon:', font=('Helvetica 10'))
     label6.place(x=10,y=115)
     label66=Label(root, text='0', font=('Helvetica 10'))
     label66.place(x=50,y=115)
     #yaw dot
-    label7=Label(root, text='yaw_v:', font=('Helvetica 10'))
+    label7=Label(root, text='yaw_dot:', font=('Helvetica 10'))
     label7.place(x=10,y=140)
     label77=Label(root, text='0', font=('Helvetica 10'))
     label77.place(x=50,y=140)
 
+    thrust_text=Label(root, text='thrust', font=('Helvetica 10'))
+    thrust_text.place(x=400,y=50)
+    ww = Scale(root, from_=-9, to=9,resolution=0.1,length=100)
+    ww.place(x=400,y=100)
 
     roll_in = StringVar(root)  
     pitch_in = StringVar(root)
     yaw_in = StringVar(root)
+    tt = 0
+    def update_log(self):
+        window.tt +=10
+        if(window.tt>200):
+            window.tt=0
+        window.canva.create_text(20,window.tt, text=str(window.tt), fill="white", font=('Helvetica 7'))
     #pipe
     def __init__(self,pipe) -> None:
         self.roll =0 
@@ -80,6 +92,7 @@ class window():
             window.label55.configure(text=str(data[4]))
             window.label66.configure(text=str(data[5]))
             window.label77.configure(text=str(data[6]))
+        #print(window.ww.get())
         window.root.after(100,self.update_sc)
 
     def setAtitud(self,pipe):
@@ -116,7 +129,7 @@ class window():
         B.place(x=170,y=13)
         RB = Button(padx=20,pady=2, text ="reset", command = lambda: self.resetAtitud(pipe))
         RB.place(x=240,y=13)
-        connect = Button(padx=20,pady=2, text ="circle", command = lambda: self.resetAtitud(pipe))
+        connect = Button(padx=20,pady=2, text ="circle", command = self.update_log)
         connect.place(x=240,y=103)
     
         window.root.after(100,self.update_sc)

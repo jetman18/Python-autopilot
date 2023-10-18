@@ -33,7 +33,7 @@ def vect(x,y,angle,color):
 
 def test_case1():
     Kd = 1
-    Kc =1
+    Kc =0.4
     pi2 = 90
     step = 20
     line_p1 = [300,300]
@@ -71,6 +71,27 @@ def test_case2_loiter(radius):
             sigDct = sign(Dct)
             phi = pi1 - 90 + min(abs(Dct*Kc),90)*sigDct
             vect(i,j,phi,'blue')
+def test_case3_loiter(radius):
+    radius = 100
+    step = 20
+    canvas.create_oval(500,300,502,302,outline = "black",fill = "white",width = 5)
+    canvas.create_oval(500 - radius,300 - radius,500 + radius + 2,300 +radius + 2,outline = "black",width = 2)
+    Kc = 10
+    for i in range(100,1000,step):
+        for j in range(0,600,step-5):
+            x = 501 - i
+            y = 301 - j
+            Dct = math.sqrt(x*x + y*y) - radius
+            pi1 = math.atan2(y,x)
+            if Dct > 0:
+                pi1 = math.degrees(pi1) + 90 + math.degrees(math.atan2(radius,Dct+radius))
+            else:
+                pi1 = math.degrees(pi1) + 90
+            sigDct = sign(Dct)
+            phi = pi1 - 90 + min(abs(Dct*Kc),90)*sigDct
+            vect(i,j,phi,'blue')
+
+
 def test_folow_waypoint(radius):
     step = 20
     #canvas.create_oval(500,300,502,302,outline = "black",fill = "white",width = 5)
@@ -112,10 +133,27 @@ def test_folow_waypoint(radius):
             elif fisrtWp == True:
                 pass
 
-
-           
+Kd = 1
+Kc =1
+pi2 = 90
+step = 20
+line_p1 = [300,300]
+line_p2 = [500,300]
+def motion(event):
+    xx, yy = event.x, event.y
+    #print('{}, {}'.format(x, y))
+    x = line_p1[0] - xx
+    y = line_p1[1] - yy
+    pi1 = math.atan2(y,x)
+    pi1 = math.degrees(pi1) + 90
+    Dct = yy - line_p2[1]
+    sigDct = sign(Dct)
+    s = math.pow(abs(Dct*Kc),Kd)
+    phi = 90 - min(s,90)*sigDct
+    print(phi)
+win.bind('<Motion>', motion)
 test_case1()
 #test_folow_waypoint(100)
-#test_case2_loiter(100)
+#test_case3_loiter(200)
 canvas.pack()
 win.mainloop()

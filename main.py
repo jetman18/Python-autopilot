@@ -2,7 +2,7 @@
 Start FlightGear with:
 `fgfs --native-fdm=socket,out,30,localhost,5501,udp --native-ctrls=socket,out,30,localhost,5503,udp --native-ctrls=socket,in,30,localhost,5504,udp --aircraft=sf260`
 """
-
+import waypoint
 import navigation
 import time
 import math
@@ -16,7 +16,7 @@ def ctrls_callback(ctrls_data, event_pipe):
     ail_ctrl,ele_ctrl,rud_ctrl,thro_ctrl,flap_ctrl = event_pipe.child_recv()  
     ctrls_data.elevator = ele_ctrl
     ctrls_data.aileron  = -ail_ctrl
-    ctrls_data.rudder =   0
+    ctrls_data.aile =   rud_ctrl
     ctrls_data.throttle[0] = 1#thro_ctrl
     #ctrls_data.flaps = flap_ctrl
     return ctrls_data
@@ -40,41 +40,67 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     
     fdm_conn = FDMConnection(fdm_version=24)  # May need to change version from 24
     fdm_event_pipe = fdm_conn.connect_rx('localhost', 5501, fdm_callback)
-
+    fdm_event_pipe.is_set()
 
     ctrls_conn.start()  # Start the Ctrls RX/TX loop
     fdm_conn.start()  # Start the FDM RX loop0
     ##### END INIT #######################
     # roll kd= 0.01 
-    roll = pidcontroller.PID(0.1,0.1,0.001) # 0,02  0.002
+    roll = pidcontroller.PID(0.05,0.01,0.003) # 0,02  0.002
     pitch = pidcontroller.PID(0.02,0,0)
-    yaw = pidcontroller.PID(0.3,0,0)
+    yaw = pidcontroller.PID(1,0,0)
 
 
     roll_deg_set = 0
-    pitch_deg_set = 20
-    yaw_deg_set = 0
+    pitch_deg_set = 12
+   
 
     recvAtitude=[]
-    navigator = navigation.NAV()
+    nav = navigation.NAV()
     yaw_loiter = navigation.anglextrame()
     yaw_aircraft = navigation.anglextrame()
     pp,ppp = mp.Pipe()
-    #wd = window(pp)
+    wd = window(pp)
     timer = time.time()
     loiter_st = 0
-    rudder = 0
-    tt=0
-    while 1:#wd.isRun():
+    aile = 0
+    rud = 0
+    dis = 0
+    wpindex = 0
+    cross_track = 0
+    
+    end_runway_lat =  37.6254018
+    end_runway_lon =  -122.385271
+    home_lat = 37.628715674334124
+    home_lon =-122.39334575867426
+    yaw_deg_set = 117
+    wp = waypoint.wayPoint()
+    wp.addWaypoint('to',home_lat,home_lon,0)
+    wp.addWaypoint('wp',home_lat,home_lon + 0.04,0)
+    wp.addWaypoint('wp',home_lat + 0.04,home_lon + 0.04,0)
+    wp.addWaypoint('wp',home_lat + 0.04,home_lon,0)
+
+    ttt = time.time()
+    while wd.isRun():
         recvAtitude = fdm_event_pipe.parent_recv() 
         if  time.time() - timer > 0.1:  # 10hz command send
             timer = time.time()
             #############################################
-            yaw_deg = recvAtitude[2]
-            yaw_command,dis = navigator.cricleFly(recvAtitude[3],recvAtitude[4],
-                                    63.94846441361346,
-                                    -22.605470890274642,
-                                    1000)
+            yaw_deg   = recvAtitude[2]
+            latitude  = recvAtitude[3]
+            longitude = recvAtitude[4]
+            altitude  = recvAtitude[5]
+            #yaw_command,dis = nav.cricleFlyMode1(recvAtitude[3],recvAtitude[4],home_lat,home_lon,1000)
+            command = nav.navigationStart(latitude,longitude,wp)
+            try:
+                rud = command[0]
+                dis = command[1]
+                wpindex  = command[2]
+                cross_track = command[3]
+            except:
+                pass
+            
+            #print(command[0],'  ',int(command[1]),'',command[2])
             if ppp.poll():
                 data = ppp.recv()
                 data = struct.unpack('ddd',data)
@@ -84,35 +110,34 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
                 print(roll_deg_set,' ',pitch_deg_set,' ',yaw_deg_set)
             ################PID##############################
             
-            if recvAtitude[5]>100:
+            if altitude > 50:
                 loiter_st = 1
+            else:
+                rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
             if loiter_st == 1:
-                rudder = yaw.yawPid(yaw_deg,yaw_command)
-                if rudder > 50:
-                    rudder = 50
-                elif rudder <-50:
-                    rudder = -50
-                #print(yaw_deg,'  ',  yaw_command)
-                if rudder > 70:
-                    rudder = 70
-                elif rudder <-70:
-                    rudder = -70
-            if time.time() -  tt > 1:
-                #print(recvAtitude[3],' ',recvAtitude[4])
-                tt = time.time()
-            print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
-            aileron = roll.pidCalculate(recvAtitude[0],-rudder)
+                rude = 0
+                aile = yaw.yawPid(yaw_deg,rud )
+                if aile > 50:
+                    aile = 50
+                elif aile <-50:
+                    aile = -50
+
+            #ctrls_event_pipe.set()
+            #print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
+            if time.time() - ttt > 1:
+                ttt = time.time()
+                print(int(yaw_deg),'  ',int(rud),'  ',int(dis),'   ',int(cross_track),'  ',int(wpindex))
+
+            #print(ctrls_event_pipe.is_set())
+            aileron = roll.pidCalculate(recvAtitude[0],-aile)
             elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
-            #rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
-            #wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),
-            #               int(recvAtitude[2]),int(recvAtitude[5]),
-            #               recvAtitude[3],recvAtitude[4],
-            #               recvAtitude[7])
-            ctrls_event_pipe.parent_send((aileron,elevator,0,0,0)) 
+
+            wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),
+                           int(recvAtitude[2]),int(recvAtitude[5]),
+                           recvAtitude[3],recvAtitude[4],
+                           recvAtitude[7])
+            ctrls_event_pipe.parent_send((aileron,elevator,rude,0,0)) 
+            ctrls_event_pipe.clear()
+    # stop all child process
     ctrls_conn.stop()
     fdm_conn.stop()
-
-
-
-#  328.96319338294563   328.96319338294563   1018.2682297300826
-#  291.65909838626055   651.6590983862606   1036.8912239792962
