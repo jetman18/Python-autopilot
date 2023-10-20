@@ -13,14 +13,14 @@ from windowview import window
 import multiprocessing as mp
 import struct
 def ctrls_callback(ctrls_data, event_pipe):
-    #if event_pipe.child_poll():
-    ail_ctrl,ele_ctrl,rud_ctrl,thro_ctrl,flap_ctrl = event_pipe.child_recv()  
-    ctrls_data.elevator = ele_ctrl
-    ctrls_data.aileron  = -ail_ctrl
-    ctrls_data.aile =   rud_ctrl
-    ctrls_data.throttle[0] = 1#thro_ctrl
-    #ctrls_data.flaps = flap_ctrl
-    return ctrls_data
+    if event_pipe.child_poll():
+        ail_ctrl,ele_ctrl,rud_ctrl,thro_ctrl,flap_ctrl = event_pipe.child_recv()  
+        ctrls_data.elevator = ele_ctrl
+        ctrls_data.aileron  = -ail_ctrl
+        ctrls_data.aile =   rud_ctrl
+        ctrls_data.throttle[0] = 1#thro_ctrl
+        #ctrls_data.flaps = flap_ctrl
+        return ctrls_data
 
 def fdm_callback(fdm_data, event_pipe):
     buffer =[]
@@ -33,6 +33,13 @@ def fdm_callback(fdm_data, event_pipe):
     buffer.append(fdm_data.eng_state[0])
     buffer.append(math.degrees(fdm_data.psidot_rad_per_s))
     event_pipe.child_send((buffer))
+    ###############################
+    if event_pipe.poll():
+        recvFDM =[]
+        recvFDM = event_pipe.recv()
+        #fdm_data.alt_m = 0
+        return fdm_data
+
 
 if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     ctrls_conn = CtrlsConnection(ctrls_version=27)
@@ -41,10 +48,10 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     
     fdm_conn = FDMConnection(fdm_version=24)  # May need to change version from 24
     fdm_event_pipe = fdm_conn.connect_rx('localhost', 5501, fdm_callback)
-    fdm_event_pipe.is_set()
+    fdm_conn.connect_tx('localhost', 5502)
 
-    ctrls_conn.start()  # Start the Ctrls RX/TX loop
-    fdm_conn.start()  # Start the FDM RX loop0
+    ctrls_conn.start() 
+    fdm_conn.start()  
     ##### END INIT #######################
     # roll kd= 0.01 
     roll = pidcontroller.PID(0.05,0.01,0.003) # 0,02  0.002
@@ -124,14 +131,14 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
                 print(int(yaw_deg),'  ',int(rud),'  ',int(dis),
                       '   ',int(cross_track),'  ',int(wpindex))
             
-            wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),
-                           int(recvAtitude[2]),int(recvAtitude[5]),
-                                     recvAtitude[3],recvAtitude[4],
-                                                   recvAtitude[7])
+            wd.setAttitude(int(recvAtitude[0]),int(recvAtitude[1]),int(recvAtitude[2]),
+                      int(recvAtitude[5]),recvAtitude[3],recvAtitude[4],recvAtitude[7])
             aileron = roll.pidCalculate(recvAtitude[0],-aile)
             elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
             ctrls_event_pipe.parent_send((aileron,elevator,rude,0,0)) 
+            fdm_event_pipe.parent_send((0,))  # send tuple
             ctrls_event_pipe.clear() #important
+            fdm_event_pipe.clear()
     # stop all child process
     ctrls_conn.stop()
     fdm_conn.stop()
