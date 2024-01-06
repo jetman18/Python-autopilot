@@ -7,7 +7,7 @@ import struct
 class window():
     root = Tk()
     root.title('view')
-    root.geometry("600x400")
+    root.geometry("340x170")
     canva = Canvas(root,width=200,height=200,bg='black')
     canva.place(x=0,y=200)
 

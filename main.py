@@ -1,6 +1,6 @@
 """
 Start FlightGear with:
-`fgfs --native-fdm=socket,out,30,localhost,5501,udp --native-ctrls=socket,out,30,localhost,5503,udp --native-ctrls=socket,in,30,localhost,5504,udp --aircraft=sf260`
+`fgfs --native-fdm=socket,out,30,localhost,5501,udp --native-ctrls=socket,out,30,localhost,5503,udp --native-ctrls=socket,in,30,localhost,5504,udp`
 """
 from utils import *
 import waypoint
@@ -12,6 +12,8 @@ from flightgear_python.fg_if import FDMConnection, CtrlsConnection
 from windowview import window
 import multiprocessing as mp
 import struct
+
+
 def ctrls_callback(ctrls_data, event_pipe):
     if event_pipe.child_poll():
         ail_ctrl,ele_ctrl,rud_ctrl,thro_ctrl,flap_ctrl = event_pipe.child_recv()  
@@ -34,13 +36,13 @@ def fdm_callback(fdm_data, event_pipe):
     buffer.append(math.degrees(fdm_data.psidot_rad_per_s))
     event_pipe.child_send((buffer))
     ###############################
-    if event_pipe.poll():
+    
+    if event_pipe.child_poll():
         recvFDM =[]
         recvFDM = event_pipe.recv()
         #fdm_data.alt_m = 0
         return fdm_data
-
-
+    
 if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     ctrls_conn = CtrlsConnection(ctrls_version=27)
     ctrls_event_pipe = ctrls_conn.connect_rx('localhost', 5503, ctrls_callback)
@@ -53,10 +55,9 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     ctrls_conn.start() 
     fdm_conn.start()  
     ##### END INIT #######################
-    # roll kd= 0.01 
-    roll = pidcontroller.PID(0.05,0.01,0.003) # 0,02  0.002
+    roll = pidcontroller.PID(0.03,0.01,0.02) # 0,02  0.002
     pitch = pidcontroller.PID(0.02,0,0)
-    yaw = pidcontroller.PID(1,0,0)
+    yaw = pidcontroller.PID(1.2,0,0.0)
 
 
     roll_deg_set = 0
@@ -65,8 +66,6 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
 
     recvAtitude=[]
     nav = navigation.NAV()
-    yaw_loiter = navigation.anglextrame()
-    yaw_aircraft = navigation.anglextrame()
     p1,p2 = mp.Pipe()
     wd = window(p1)
     timer = time.time()
@@ -80,7 +79,7 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     end_runway_lat =  37.6254018
     end_runway_lon =  -122.385271
     head_runway_lat = 37.628715674334124
-    head_runway_lon =-122.39334575867426
+    head_runway_lon = -122.39334575867426
     yaw_deg_set = 117
 
     wp = waypoint.wayPoint()
@@ -88,9 +87,22 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
     wp.addWaypoint('wp',head_runway_lat,head_runway_lon + 0.04,0)
     wp.addWaypoint('wp',head_runway_lat + 0.04,head_runway_lon + 0.04,0)
     wp.addWaypoint('wp',head_runway_lat + 0.04,head_runway_lon,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.0001,head_runway_lon,0)
 
-    ttt = time.time()
-    while wd.isRun():
+    wp.addWaypoint('wp',head_runway_lat + 0.02 - 0.008,head_runway_lon + 0.02 - 0.00309,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.02 + 0.00585,head_runway_lon + 0.02 + 0.00805,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.02,head_runway_lon + 0.02 - 0.01,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.02 - 0.00805,head_runway_lon + 0.02 + 0.00585,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.02 + 0.008,head_runway_lon + 0.02 - 0.00309,0)
+    wp.addWaypoint('wp',head_runway_lat + 0.02 - 0.008,head_runway_lon + 0.02 - 0.00309,0)
+
+
+    rude = 0
+
+
+    log_timer = time.time()
+    # main loop
+    while wd.isRun():  
         recvAtitude = fdm_event_pipe.parent_recv() 
         if  time.time() - timer > 0.1:  # 10hz control
             timer = time.time()
@@ -123,11 +135,15 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
                 rude = yaw.pidCalculate(yaw_deg,yaw_deg_set)
             if loiter_st == 1:
                 aile = yaw.yawPid(yaw_deg,rud)
-                aile = constranin(aile,-40,40)
+                aile = constranin(aile,-50,50)
                 rude = 0
+            if(abs(recvAtitude[0])>20):
+                pitch_deg_set = 25
+            else:
+                pitch_deg_set = 15
             #print(int(yaw_deg),'  ',int(yaw_command),'  ',int(dis))
-            if time.time() - ttt > 1:
-                ttt = time.time()
+            if time.time() - log_timer > 1:
+                log_timer = time.time()
                 print(int(yaw_deg),'  ',int(rud),'  ',int(dis),
                       '   ',int(cross_track),'  ',int(wpindex))
             
@@ -136,9 +152,9 @@ if __name__ == '__main__':  # NOTE: This is REQUIRED on Windows!
             aileron = roll.pidCalculate(recvAtitude[0],-aile)
             elevator = pitch.pidCalculate(recvAtitude[1],pitch_deg_set)
             ctrls_event_pipe.parent_send((aileron,elevator,rude,0,0)) 
-            fdm_event_pipe.parent_send((0,))  # send tuple
+            #fdm_event_pipe.parent_send((0,))  # send tuple
             ctrls_event_pipe.clear() #important
-            fdm_event_pipe.clear()
+            #fdm_event_pipe.clear()
     # stop all child process
     ctrls_conn.stop()
     fdm_conn.stop()

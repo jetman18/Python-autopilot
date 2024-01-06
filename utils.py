@@ -7,11 +7,11 @@ def swapAngle(deg,swA):
         return deg
     
 def sign(x):
-    temporary=1
-    try:
-        temporary = int(x/abs(x))
-    except:
-        pass
+    temporary=0
+    if x > 0:
+        temporary = 1
+    elif x < 0:
+        temporary = -1
     return temporary
 
 def range360(value):

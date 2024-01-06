@@ -18,8 +18,6 @@ class NAV():
         self.posIndex = 0
         self.last_t = 0
         self.wpIndex = 0
-
-    
     def cricleFlyMode1(self,lat,lon,target_lat,tarhet_lon,radius):
         dct1 = self.distanceBetweenTwopoint(lat,lon,target_lat,tarhet_lon)
         dct =dct1 - radius
@@ -87,6 +85,8 @@ class NAV():
                                                    wp_list.getLon(self.wpIndex))
             phi = path_angle - phi 
             phi = range180(phi)
+            if (abs(dis2nextWp) < 300) or (abs(phi) >= 80):  # 100m
+                self.wpIndex += 1 # next path
             #print(phi)
             phi = math.radians(phi)
             cross_track = dis2nextWp*math.sin(phi)
@@ -101,9 +101,6 @@ class NAV():
                 self.velocity = (dis2nextWp - self.lastDistance2wp)/dt
                 self.lastDistance2wp = dis2nextWp
                 #######################################
-            beta = abs(math.degrees(phi))
-            if (abs(dis2nextWp) < 300) or (beta >= 90):  # 100m
-                self.wpIndex += 1 # next path
             return theta,dis2nextWp,self.wpIndex,cross_track
     def waypointApproach(lat,lon):
         pass
