@@ -6,4 +6,4 @@ Chương trình mô phỏng, điều khiển dẫn đường cho máy bay cánh 
 
 ![exampl](./resource/hmm.png)
 
-![exampl](./resource/image3.
+![exampl](./resource/image3.png)
